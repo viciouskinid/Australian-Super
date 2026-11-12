@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AustralianSuper daily rates</title>
+<style>
+:root{
+  --bg:#f5f6f4;--surface:#fff;--ink:#16211d;--muted:#5d6b65;--line:#dfe4e0;
+  --accent:#0b6b57;--pos:#13795b;--neg:#b3261e;--err-bg:#fdf0ee;--grid:rgba(0,0,0,.07);
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0f1512;--surface:#171f1b;--ink:#e8eeea;--muted:#9aa9a1;--line:#27322d;
+  --accent:#4cc3a4;--pos:#4cc3a4;--neg:#ff8a80;--err-bg:#2a1816;--grid:rgba(255,255,255,.08)}
+}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+body{font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+main{max-width:1100px;margin:0 auto;padding:2rem 1rem 4rem}
+h1{font-size:1.75rem;font-weight:650;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:.25rem 0 1.5rem}
+details.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:1.5rem}
+details.panel>summary{cursor:pointer;padding:.9rem 1rem;font-weight:600;min-height:44px}
+details.panel>summary small{font-weight:400;color:var(--muted);margin-left:.5rem}
+form{display:flex;flex-wrap:wrap;gap:.75rem;align-items:end;padding:0 1rem 1rem}
+.chartbox{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:1rem;margin-bottom:1.25rem}
+label{display:grid;gap:.25rem;font-size:.85rem;color:var(--muted)}
+input,select,button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:.45rem .6rem}
+button{cursor:pointer;background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.checks{display:flex;gap:1rem;align-items:center;font-size:.85rem;color:var(--muted)}
+.checks label{display:flex;align-items:center;gap:.4rem}
+.summary{display:flex;flex-wrap:wrap;gap:2rem;margin-bottom:1.5rem;color:var(--muted);font-size:.9rem}
+.summary b{display:block;color:var(--ink);font-size:1.1rem}
+.opt{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--c,var(--accent));border-radius:10px;padding:1.25rem;margin-bottom:1.25rem}
+.opt-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.5rem}
+.opt h2{font-size:1.2rem;font-weight:600}
+.big{font-size:1.9rem;font-weight:650;font-variant-numeric:tabular-nums}
+.pos{color:var(--pos)}.neg{color:var(--neg)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:.75rem;margin:1rem 0}
+.stats div{font-size:.8rem;color:var(--muted)}
+.stats b{display:block;font-size:1.05rem;color:var(--ink);font-variant-numeric:tabular-nums}
+.chart{height:280px;position:relative}
+.state{padding:2rem;text-align:center;color:var(--muted)}
+.error{background:var(--err-bg);border:1px solid var(--neg);border-radius:10px;padding:1.25rem}
+.error h2{color:var(--neg);font-size:1.1rem;margin-bottom:.4rem}
+.error textarea{width:100%;height:220px;margin:.75rem 0;font:12px/1.4 ui-monospace,Consolas,monospace;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:.6rem}
+.error .row{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.chart.tall{height:340px}
+.note{color:var(--muted);font-size:.85rem;margin:-1rem 0 1.25rem}
+button,input,select{min-height:44px}
+@media (max-width:640px){
+  main{padding:1rem .75rem 3rem}
+  h1{font-size:1.4rem}
+  form{flex-direction:column;align-items:stretch;padding:0 .75rem .75rem}
+  form label,form input,form select,form button{width:100%}
+  .checks{flex-direction:column;align-items:flex-start;gap:.25rem}
+  .checks label{width:auto}
+  .checks input{width:auto;min-height:0}
+  .summary{gap:1rem 1.5rem}
+  .opt{padding:1rem;border-left-width:4px}
+  .big{font-size:1.5rem}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .chart{height:230px}
+  .chart.tall{height:300px}
+  .error textarea{height:160px}
+  .error button{flex:1}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>AustralianSuper daily rates</h1>
+  <p class="sub" id="range">Loading…</p>
+
+  <details class="panel" id="settings"><summary>Settings <small id="settingsSummary"></small></summary>
+  <form id="form">
+    <label>Option type
+      <select id="superType">
+        <option value="Super">Super</option>
+        <option value="Pension">Pension</option>
+      </select>
+    </label>
+    <label>Range
+      <select id="preset">
+        <option value="day">Day</option>
+        <option value="week">Week</option>
+        <option value="month">Month</option>
+        <option value="3m">3 months</option>
+        <option value="6m">6 months</option>
+        <option value="1y">1 year</option>
+        <option value="fytd">Financial year to date</option>
+        <option value="all">All</option>
+        <option value="custom">Custom range</option>
+      </select>
+    </label>
+    <label>Investment option
+      <select id="option"><option>Loading…</option></select>
+    </label>
+    <label class="dates" hidden>Start <input type="date" id="start" required></label>
+    <label class="dates" hidden>End <input type="date" id="end" required></label>
+    <div class="checks">
+      <label><input type="checkbox" id="cumulative" checked> Cumulative</label>
+      <label><input type="checkbox" id="truncate" checked> Truncate decimals</label>
+    </div>
+    <button type="submit">Update</button>
+  </form>
+  </details>
+
+  <div id="out" aria-live="polite"><div class="state">Loading data…</div></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+<script>
+const PROXY = "https://corsproxy.viciouskinid.workers.dev/?url=";
+const API = "https://www.australiansuper.com/api/graphs/dailyrates/graph";
+const $ = id => document.getElementById(id);
+const charts = [];
+
+// ---- date helpers -------------------------------------------------------
+const pad = n => String(n).padStart(2, "0");
+const toIso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const isoToApi = s => { const [y,m,d] = s.split("-"); return `${d}/${m}/${y}`; };
+const apiToIso = s => { const [d,m,y] = s.split("/"); return y ? `${y}-${pad(m)}-${pad(d)}` : s; };
+const MONTHS = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+function parseDay(str) {
+  const p = String(str).split(" ");
+  if (p.length === 3 && p[1] in MONTHS) return new Date(+p[2], MONTHS[p[1]], +p[0]);
+  return new Date(str);
+}
+// Financial year (Australia) a date belongs to: Jul 2025 - Jun 2026 => 2026
+const fyOf = d => d.getMonth() >= 6 ? d.getFullYear() + 1 : d.getFullYear();
+
+// ---- range presets ------------------------------------------------------
+const ALL_START = "1990-01-01"; // earliest date requested for "All"; adjust if the API rejects it
+function presetStart(preset, end) {
+  const d = new Date(end + "T00:00:00");
+  switch (preset) {
+    case "day":   d.setDate(d.getDate() - 1); break;
+    case "week":  d.setDate(d.getDate() - 7); break;
+    case "month": d.setMonth(d.getMonth() - 1); break;
+    case "3m":    d.setMonth(d.getMonth() - 3); break;
+    case "6m":    d.setMonth(d.getMonth() - 6); break;
+    case "1y":    d.setFullYear(d.getFullYear() - 1); break;
+    case "fytd":  return `${fyOf(d) - 1}-07-01`;
+    case "all":   return ALL_START;
+    default:      return null;
+  }
+  return toIso(d);
+}
+function syncDates() {
+  document.querySelectorAll(".dates").forEach(l => l.hidden = $("preset").value !== "custom");
+}
+function shiftDays(iso, n) {
+  const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return toIso(d);
+}
+function applyPreset() {
+  const preset = $("preset").value;
+  syncDates();
+  if (preset === "custom") return;
+  $("end").value = toIso(new Date());
+  $("start").value = presetStart(preset, $("end").value);
+}
+
+// ---- config from URL (?range=3m or ?start=DD/MM/YYYY&end=DD/MM/YYYY) ------
+function initForm() {
+  const q = new URLSearchParams(location.search);
+  $("superType").value = q.get("superType") || "Super";
+  $("cumulative").checked = q.get("cumulative") !== "false";
+  $("truncate").checked = q.get("truncateDecimalPlaces") !== "false";
+  if (q.get("start") || q.get("end")) {
+    $("preset").value = "custom";
+    syncDates();
+    $("start").value = q.get("start") ? apiToIso(q.get("start")) : presetStart("fytd", toIso(new Date()));
+    $("end").value = q.get("end") ? apiToIso(q.get("end")) : toIso(new Date());
+  } else {
+    $("preset").value = [...$("preset").options].some(o => o.value === q.get("range")) ? q.get("range") : "fytd";
+    applyPreset();
+  }
+}
+
+// ---- fetching -----------------------------------------------------------
+// The API returns no series when the window holds fewer than two published
+// days (e.g. "Day" when today's rate isn't out yet), so presets ask for a wider
+// window and the result is trimmed/extended as needed.
+function trimDay(p, cumulative) {
+  const g = p.graph;
+  if (g.length <= 2) return p;
+  const pts = g.slice(-2);
+  if (cumulative) {
+    const base = parseFloat(pts[0].rate);
+    pts.forEach(d => { d.rate = (((1 + parseFloat(d.rate)/100) / (1 + base/100) - 1) * 100).toFixed(2); });
+  }
+  return { ...p, graph: pts };
+}
+
+async function load() {
+  const preset = $("preset").value;
+  const cumulative = $("cumulative").checked;
+  const endIso = $("end").value;
+  const reqStart = $("start").value;
+  const baseStart = preset === "day" ? shiftDays(reqStart, -6) : reqStart;
+  $("range").textContent = "Loading…";
+  $("out").innerHTML = '<div class="state">Loading data…</div>';
+  charts.splice(0).forEach(c => c.destroy());
+
+  const diag = { stage: "starting" };
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 20000);
+  const attempts = preset === "custom" ? 1 : 4;
+
+  try {
+    let products = null, usedStart = baseStart;
+    for (let n = 0; n < attempts && !products; n++) {
+      usedStart = shiftDays(baseStart, -7 * n);
+      const cfg = {
+        superType: $("superType").value,
+        start: isoToApi(usedStart),
+        end: isoToApi(endIso),
+        cumulative,
+        truncateDecimalPlaces: $("truncate").checked,
+      };
+      diag.target = `${API}?${new URLSearchParams(cfg)}`;
+      diag.requestUrl = PROXY + encodeURIComponent(diag.target);
+      diag.attempt = n + 1;
+
+      diag.stage = "fetch";
+      const res = await fetch(diag.requestUrl, { signal: ctl.signal });
+      diag.status = `${res.status} ${res.statusText}`;
+      diag.responseHeaders = Object.fromEntries(res.headers.entries());
+      const text = await res.text();
+      diag.bodyPreview = text.slice(0, 600);
+      if (!res.ok) throw new Error(`Proxy or API returned HTTP ${res.status}`);
+
+      diag.stage = "parse JSON";
+      const json = JSON.parse(text);
+
+      diag.stage = "read products";
+      const found = json.drawing?.[0]?.products;
+      if (Array.isArray(found) && found.length && found[0].graph?.length) products = found;
+      else diag.jsonKeys = Object.keys(json);
+    }
+    if (!products) throw new Error("Response had no drawing[0].products data (no rates published for this range)");
+
+    if (preset === "day") products = products.map(p => trimDay(p, cumulative));
+    diag.stage = "render";
+    render(products);
+    const g = products[0].graph;
+    let label = `Performance from ${g[0].day} to ${g[g.length-1].day}`;
+    if (preset !== "day" && usedStart !== reqStart) label += " (no data for the requested start, so the range was extended)";
+    $("range").textContent = label;
+  } catch (err) {
+    $("range").textContent = "";
+    showError(err, diag);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// ---- rendering ----------------------------------------------------------
+const fmt = n => (Number.isFinite(n) ? n.toFixed(2) : "N/A");
+const cls = n => (n >= 0 ? "pos" : "neg");
+
+let DATA = [];
+const ALL = "__all";
+
+function render(products) {
+  DATA = products;
+  const sel = $("option"), prev = sel.value;
+  sel.innerHTML = `<option value="${ALL}">All options</option>` +
+    products.map(p => `<option value="${p.title.replace(/"/g, "&quot;")}">${p.title}</option>`).join("");
+  const titles = products.map(p => p.title);
+  const hg = titles.find(t => /high growth/i.test(t));
+  sel.value = (prev === ALL || titles.includes(prev)) ? prev : (hg || titles[0]);
+  renderView();
+}
+
+function renderView() {
+  charts.splice(0).forEach(c => c.destroy());
+  const products = DATA, first = products[0].graph;
+  const sel = $("option").value;
+  const shown = sel === ALL ? products : products.filter(p => p.title === sel);
+  let html = `<div class="summary">
+    <div>Latest date<b>${first[first.length-1].day}</b></div>
+    <div>Investment options<b>${products.length}</b></div>
+    <div>Data points<b>${first.length}</b></div></div>
+    <div class="chartbox"><div class="chart tall"><canvas id="cMain"></canvas></div></div>`;
+
+  shown.forEach((p, i) => {
+    const g = p.graph, last = g[g.length-1];
+    const rates = g.map(d => parseFloat(d.rate));
+    const latest = parseFloat(last.rate);
+    const change = latest - rates[0];
+    // FYTD: relative to first point inside the financial year of the latest data point
+    const lastDate = parseDay(last.day);
+    const fyStart = new Date(fyOf(lastDate) - 1, 6, 1);
+    const idx = g.findIndex(d => parseDay(d.day) >= fyStart);
+    const fytd = idx >= 0 ? latest - rates[idx] : NaN;
+    const avg = rates.reduce((a,b) => a+b, 0) / rates.length;
+    html += `<section class="opt" style="--c:${p.color || ""}">
+      <div class="opt-head"><h2>${p.title}</h2>
+        <div class="big ${cls(latest)}">${last.rate}%</div></div>
+      <div class="stats">
+        <div>Latest daily<b>${last.dailyRate}%</b></div>
+        <div>Change<b class="${cls(change)}">${fmt(change)}%</b></div>
+        <div>FYTD<b class="${cls(fytd)}">${fmt(fytd)}%</b></div>
+        <div>Max<b>${fmt(Math.max(...rates))}%</b></div>
+        <div>Min<b>${fmt(Math.min(...rates))}%</b></div>
+        <div>Average<b>${fmt(avg)}%</b></div>
+        <div>Type<b style="font-size:.9rem">${p.type || "N/A"}</b></div>
+      </div>
+      </section>`;
+  });
+  $("out").innerHTML = html;
+  if (sel === ALL) drawAll(products, "cMain");
+  else drawChart(shown[0], "cMain");
+  updateSettingsSummary();
+}
+
+function updateSettingsSummary() {
+  const t = id => { const e = $(id); return e.options[e.selectedIndex]?.text || ""; };
+  $("settingsSummary").textContent = [t("superType"), t("preset"), t("option")].filter(Boolean).join(" · ");
+}
+
+function fyBoundaries(graph) {
+  const out = []; let prev = null;
+  graph.forEach((pt, index) => {
+    const fy = fyOf(parseDay(pt.day));
+    if (prev !== null && fy !== prev) out.push({ year: fy, index });
+    prev = fy;
+  });
+  return out;
+}
+
+// Make sure a line colour stays visible against the current card background
+function visibleColor(hex) {
+  const css = getComputedStyle(document.documentElement);
+  const fallback = css.getPropertyValue("--accent").trim();
+  const parse = h => {
+    h = String(h || "").trim().replace("#", "");
+    if (h.length === 3) h = h.split("").map(c => c + c).join("");
+    return /^[0-9a-f]{6}$/i.test(h) ? [0,2,4].map(i => parseInt(h.slice(i, i+2), 16)) : null;
+  };
+  const lum = ([r,g,b]) => { const f = v => (v/=255) <= .03928 ? v/12.92 : ((v+.055)/1.055)**2.4;
+    return .2126*f(r) + .7152*f(g) + .0722*f(b); };
+  const ratio = (a, b) => { const [x,y] = [lum(a), lum(b)].sort((m,n) => n-m); return (x+.05)/(y+.05); };
+  let rgb = parse(hex) || parse(fallback);
+  const bg = parse(css.getPropertyValue("--surface").trim()) || [255,255,255];
+  const dark = lum(bg) < .5;
+  for (let i = 0; i < 12 && ratio(rgb, bg) < 3.5; i++)
+    rgb = rgb.map(v => Math.round(dark ? v + (255 - v) * .15 : v * .85));
+  return "#" + rgb.map(v => v.toString(16).padStart(2, "0")).join("");
+}
+const isHighGrowth = p => /high growth/i.test(p.title || "");
+const small = () => matchMedia("(max-width:640px)").matches;
+
+function drawAll(products, canvasId) {
+  const css = getComputedStyle(document.documentElement);
+  const muted = css.getPropertyValue("--muted").trim();
+  const dashes = [[], [8,4], [2,3], [10,3,2,3], [], [6,6]];
+  charts.push(new Chart($(canvasId), {
+    type: "line",
+    data: { labels: products[0].graph.map(d => d.day),
+      datasets: products.map((p, i) => ({
+        label: p.title, data: p.graph.map(d => parseFloat(d.rate)),
+        borderColor: visibleColor(p.color), backgroundColor: visibleColor(p.color),
+        borderWidth: isHighGrowth(p) ? 4.5 : 2.5, borderDash: dashes[i % dashes.length],
+        tension: .3, pointRadius: products[0].graph.length < 15 ? 3 : 0, pointHoverRadius: 5, order: isHighGrowth(p) ? 0 : 1 })) },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "bottom", labels: { color: muted, usePointStyle: true, boxWidth: 10 } },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y}%` } } },
+      scales: {
+        x: { ticks: { maxTicksLimit: small() ? 5 : 8, color: muted }, grid: { display: false } },
+        y: { ticks: { color: muted }, grid: { color: css.getPropertyValue("--grid").trim() } }
+      }
+    }
+  }));
+}
+
+function drawChart(p, canvasId) {
+  const css = getComputedStyle(document.documentElement);
+  const color = visibleColor(p.color);
+  const annotations = {};
+  fyBoundaries(p.graph).forEach((b, n) => {
+    annotations["fy"+n] = {
+      type: "line", xMin: b.index, xMax: b.index, borderDash: [5,5], borderWidth: 1.5,
+      borderColor: css.getPropertyValue("--muted").trim(),
+      label: { display: true, content: `FY${b.year}`, position: "start",
+               backgroundColor: css.getPropertyValue("--muted").trim(), color: "#fff", font: { size: 10 } }
+    };
+  });
+  charts.push(new Chart($(canvasId), {
+    type: "line",
+    data: { labels: p.graph.map(d => d.day),
+      datasets: [{ data: p.graph.map(d => parseFloat(d.rate)), borderColor: color,
+        backgroundColor: color + "18", fill: true, borderWidth: isHighGrowth(p) ? 4 : 3, tension: .3,
+        pointRadius: p.graph.length < 15 ? 3 : 0, pointHoverRadius: 5 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: { legend: { display: false }, annotation: { annotations },
+        tooltip: { callbacks: { label: c => `Rate: ${c.parsed.y}%` } } },
+      scales: {
+        x: { ticks: { maxTicksLimit: small() ? 5 : 8, color: css.getPropertyValue("--muted").trim() }, grid: { display: false } },
+        y: { title: { display: true, text: "Rate (%)", color: css.getPropertyValue("--muted").trim() },
+             ticks: { color: css.getPropertyValue("--muted").trim() },
+             grid: { color: css.getPropertyValue("--grid").trim() } }
+      }
+    }
+  }));
+}
+
+// ---- errors -------------------------------------------------------------
+function showError(err, diag) {
+  const report = JSON.stringify({
+    error: { name: err.name, message: err.message },
+    failedAt: diag.stage,
+    ...diag,
+    page: { origin: location.origin, href: location.href },
+    time: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    hint: err.name === "AbortError" ? "Request timed out after 20s"
+        : err instanceof TypeError ? "Network/CORS failure: no response reached the browser (blocked, offline, or the Worker rejected this Origin)"
+        : undefined,
+  }, null, 2);
+  $("out").innerHTML = `<div class="error">
+    <h2>Couldn't load rates</h2>
+    <p>${err.message}. Copy the details below and paste them to Claude.</p>
+    <textarea id="report" readonly></textarea>
+    <div class="row"><button type="button" id="copy">Copy diagnostics</button>
+    <button type="button" class="ghost" id="retry">Try again</button>
+    <span id="copied" role="status"></span></div></div>`;
+  $("report").value = report;
+  $("copy").onclick = async () => {
+    try { await navigator.clipboard.writeText(report); }
+    catch { $("report").select(); document.execCommand("copy"); }
+    $("copied").textContent = "Copied";
+  };
+  $("retry").onclick = load;
+  console.error(err, diag);
+}
+
+// Chart.js v4 needs plugins registered explicitly
+if (window.Chart && window["chartjs-plugin-annotation"]) Chart.register(window["chartjs-plugin-annotation"]);
+
+$("preset").addEventListener("change", () => { applyPreset(); if ($("preset").value !== "custom") load(); });
+$("option").addEventListener("change", () => { if (DATA.length) renderView(); });
+["superType", "preset"].forEach(id => $(id).addEventListener("change", updateSettingsSummary));
+["start", "end"].forEach(id => $(id).addEventListener("change", () => { $("preset").value = "custom"; }));
+$("form").addEventListener("submit", e => {
+  e.preventDefault();
+  if ($("start").value > $("end").value) { $("range").textContent = "Start date must be before end date."; return; }
+  load();
+});
+initForm();
+updateSettingsSummary();
+load();
+</script>
+</body>
+</html>
